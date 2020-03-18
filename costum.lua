@@ -18,7 +18,12 @@ local function replace_pattern(var, data)
 end
 
 function dovecot.addMailbox(cfg, opts, data)
-
+  
+    local sievepath = "/var/mail/" .. data.contract .. "/" .. data.id
+    if LC.fs.is_file(sievepath .. "/dovecot.sieve") and LC.fs.is_symlink(sievepath .. "/dovecot.sieve") then
+      LC.fs.rename(sievepath .. "/dovecot.sieve", sievepath .. "/symlink.sieve")
+    end
+  
     orig_return = orig_addMailbox(cfg, opts, data)
 
     local userfile  = cfg["userfile"]
@@ -114,7 +119,24 @@ function dovecot.addMailbox(cfg, opts, data)
     LC.fs.rename(userfile .. ".tmp", userfile)
 
     local sievepath = "/var/mail/" .. data.contract .. "/" .. data.id
-    if not LC.fs.is_file(sievepath .. "/default.sieve") then
+
+    if LC.fs.is_file(sievepath .. "/dovecot.sieve") and not LC.fs.is_symlink(sievepath .. "/dovecot.sieve") then
+      LC.fs.rename(sievepath .. "/dovecot.sieve", sievepath .. "/default.sieve")
+      LC.exec('sievec ' .. sievepath .. "/default.sieve")
+    end
+
+    if not data.autoresponder == true then
+      if LC.fs.is_file(sievepath .. "/default.sieve") and not LC.fs.is_symlink(sievepath .. "/default.sieve") then
+        os.remove(sievepath .. "/default.sieve")
+        os.remove(sievepath .. "/default.svbin")
+      end
+    end
+
+    if LC.fs.is_file(sievepath .. "/symlink.sieve") then
+      LC.fs.rename(sievepath .. "/symlink.sieve", sievepath .. "/dovecot.sieve")
+    end
+
+    if not LC.fs.is_file(sievepath .. "/dovecot.sieve") then
       if not LC.fs.is_file(sievepath .. "/sieve/default.sieve") then
         fhw, msg = io.open(sievepath .. "/sieve/default.sieve.tmp", "w")
         if fhw == nil then
@@ -127,7 +149,7 @@ function dovecot.addMailbox(cfg, opts, data)
         fhw:close()
         LC.fs.rename(sievepath .. "/sieve/default.sieve.tmp", sievepath .. "/sieve/default.sieve")
       end
-      LC.exec('ln -s ' .. "sieve/default.sieve " .. sievepath .. '/default.sieve')              
+      LC.exec('ln -s ' .. "sieve/default.sieve " .. sievepath .. '/dovecot.sieve')
     end
   
     return orig_return
