@@ -113,6 +113,23 @@ function dovecot.addMailbox(cfg, opts, data)
      -- move temporary file to new password file
     LC.fs.rename(userfile .. ".tmp", userfile)
 
+    local sievepath = "/var/mail/" .. data.contract .. "/" .. data.id
+    if not LC.fs.is_file(sievepath .. "/default.sieve") then
+      if not LC.fs.is_file(sievepath .. "/sieve/default.sieve") then
+        fhw, msg = io.open(sievepath .. "/sieve/default.sieve.tmp", "w")
+        if fhw == nil then
+          LC.log.print(LC.log.ERR, "Can't open '", sievepath .. "/sieve/default.sieve.tmp", "' for writing: ", msg)
+          return false, "Can't open '" .. sievepath .. "/sieve/default.sieve.tmp" .. "' for writing: " .. msg
+        end
+        -- adjust owner & permissions - only Dovecot (mail) needs to read this file:
+        LC.fs.setperm(sievepath .. "/sieve/default.sieve.tmp", "0640", "mail", "mail")
+        fhw:write("")
+        fhw:close()
+        LC.fs.rename(sievepath .. "/sieve/default.sieve.tmp", sievepath .. "/sieve/default.sieve")
+      end
+      LC.exec('ln -s ' .. "sieve/default.sieve " .. sievepath .. '/default.sieve')              
+    end
+  
     return orig_return
 
 end
