@@ -1,5 +1,7 @@
 orig_addMailbox = dovecot.addMailbox
 
+dovecot.USERDB_SIEVE = "userdb_sieve=/var/mail/%C/%I/default.sieve"
+
 local string = string
 -- pattern for "userdb_sieve_storage" setting in /etc/dovecot/passwd
 if USERDB_SIEVE_STORAGE == nil then
@@ -126,7 +128,7 @@ function dovecot.addMailbox(cfg, opts, data)
     end
 
     if not data.autoresponder == true then
-      if LC.fs.is_file(sievepath .. "/default.sieve") and not LC.fs.is_symlink(sievepath .. "/default.sieve") then
+      if LC.fs.is_file(sievepath .. "/default.sieve") then
         os.remove(sievepath .. "/default.sieve")
         os.remove(sievepath .. "/default.svbin")
       end
@@ -137,21 +139,21 @@ function dovecot.addMailbox(cfg, opts, data)
     end
 
     if not LC.fs.is_file(sievepath .. "/dovecot.sieve") then
-      if not LC.fs.is_file(sievepath .. "/sieve/default.sieve") then
-        fhw, msg = io.open(sievepath .. "/sieve/default.sieve.tmp", "w")
+      os.remove(sievepath .. "/dovecot.svbin")
+      if not LC.fs.is_file(sievepath .. "/sieve/roundcube.sieve") then
+        fhw, msg = io.open(sievepath .. "/sieve/roundcube.sieve.tmp", "w")
         if fhw == nil then
-          LC.log.print(LC.log.ERR, "Can't open '", sievepath .. "/sieve/default.sieve.tmp", "' for writing: ", msg)
-          return false, "Can't open '" .. sievepath .. "/sieve/default.sieve.tmp" .. "' for writing: " .. msg
+          LC.log.print(LC.log.ERR, "Can't open '", sievepath .. "/sieve/roundcube.sieve.tmp", "' for writing: ", msg)
+          return false, "Can't open '" .. sievepath .. "/sieve/roundcube.sieve.tmp" .. "' for writing: " .. msg
         end
         -- adjust owner & permissions - only Dovecot (mail) needs to read this file:
-        LC.fs.setperm(sievepath .. "/sieve/default.sieve.tmp", "0640", "mail", "mail")
-        fhw:write("")
+        LC.fs.setperm(sievepath .. "/sieve/roundcube.sieve.tmp", "0640", "mail", "mail")
+        fhw:write("/* empty script */")
         fhw:close()
-        LC.fs.rename(sievepath .. "/sieve/default.sieve.tmp", sievepath .. "/sieve/default.sieve")
+        LC.fs.rename(sievepath .. "/sieve/roundcube.sieve.tmp", sievepath .. "/sieve/roundcube.sieve")
       end
-      LC.exec('ln -s ' .. "sieve/default.sieve " .. sievepath .. '/dovecot.sieve')
     end
-  
+
     return orig_return
 
 end
