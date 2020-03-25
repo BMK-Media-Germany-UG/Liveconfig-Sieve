@@ -1,6 +1,6 @@
 orig_addMailbox = dovecot.addMailbox
 
-dovecot.USERDB_SIEVE = "userdb_sieve=/var/mail/%C/%I/default.sieve"
+dovecot.USERDB_SIEVE = "userdb_sieve=/var/mail/%C/%I/dovecot.sieve"
 
 local string = string
 -- pattern for "userdb_sieve_storage" setting in /etc/dovecot/passwd
@@ -10,7 +10,7 @@ end
 
 -- pattern for "userdb_sieve_before" setting in /etc/dovecot/passwd
 if USERDB_SIEVE_BEFORE == nil then
-  USERDB_SIEVE_BEFORE = "userdb_sieve_before=/var/mail/%C/%I/dovecot.sieve"
+  USERDB_SIEVE_BEFORE = "userdb_sieve_before=/var/mail/%C/%I/default.sieve"
 end
 
 local function replace_pattern(var, data)
